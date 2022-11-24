@@ -19,14 +19,23 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     try {
         const userCollection = client.db('carhub').collection('user');
+        const verifySeller = async (req, res, next) => {
+            const email = req.body.email;
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            if (user?.role !== 'Seller') {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+
+            next();
+        }
+
+        app.get('/user/seller', verifySeller, async(req, res))
+
         app.put('/user', async (req, res) => {
             const user = req.body;
-
-
             const filter = { email: user.email };
-            // this option instructs the method to create a document if no documents match the filter
             const options = { upsert: true };
-            // create a document that sets the plot of the movie
             const updateDoc = {
                 $set: {
                     email: user.email,
