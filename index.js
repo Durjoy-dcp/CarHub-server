@@ -20,17 +20,24 @@ async function run() {
     try {
         const userCollection = client.db('carhub').collection('user');
         const verifySeller = async (req, res, next) => {
-            const email = req.body.email;
+            console.log(req.query.email)
+            const email = req.query.email;
             const query = { email: email };
             const user = await userCollection.findOne(query);
             if (user?.role !== 'Seller') {
-                return res.status(403).send({ message: 'forbidden access' })
-            }
 
+                req.role = ''
+            } else {
+                req.role = 'Seller'
+            }
             next();
         }
 
-        app.get('/user/seller', verifySeller, async(req, res))
+        app.get('/user/seller', verifySeller, async (req, res) => {
+            console.log(req?.role)
+            res.send({ isSeller: req?.role === 'Seller' });
+
+        })
 
         app.put('/user', async (req, res) => {
             const user = req.body;
