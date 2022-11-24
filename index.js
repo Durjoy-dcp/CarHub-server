@@ -19,12 +19,27 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     try {
         const userCollection = client.db('carhub').collection('user');
-        app.post('/user', async (req, res) => {
+        app.put('/user', async (req, res) => {
             const user = req.body;
-            console.log(user)
-            const result = await userCollection.insertOne(user);
+
+
+            const filter = { email: user.email };
+            // this option instructs the method to create a document if no documents match the filter
+            const options = { upsert: true };
+            // create a document that sets the plot of the movie
+            const updateDoc = {
+                $set: {
+                    email: user.email,
+                    role: user.role,
+                    name: user.name,
+                    img: user.img
+                },
+            };
+            const result = await userCollection.updateOne(filter, updateDoc, options);
             console.log(result);
-            res.send(result);
+            res.send(result)
+
+
         })
 
     }
