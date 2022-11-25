@@ -21,6 +21,7 @@ async function run() {
         const userCollection = client.db('carhub').collection('user');
         const productCollection = client.db('carhub').collection('product');
         const wishListCollection = client.db('carhub').collection('wishlist');
+        const bookedCollection = client.db('carhub').collection('booked');
         const myorderCollection = client.db('carhub').collection('myorder');
         const verifySeller = async (req, res, next) => {
             // console.log(req.query.email)
@@ -68,7 +69,24 @@ async function run() {
             const products = await productCollection.find(query).toArray();
             res.send(products);
         })
+        app.post('/booking', async (req, res) => {
+            const bookedData = req.body;
 
+            const query = {
+                serial: bookedData.serial,
+                email: bookedData.email
+
+            }
+            const alreadyBooked = await bookedCollection.find(query).toArray();
+            if (alreadyBooked.length) {
+                const msg = `You already booked the ${bookedData.name}`
+                return res.send({ acknowledged: false, msg })
+            }
+            const result = await bookedCollection.insertOne(bookedData);
+            res.send(result);
+            console.log(result);
+
+        })
         app.get('/user/admin', verifyAdmin, async (req, res) => {
             console.log(req?.role)
             res.send({ isAdmin: req?.role === 'admin' });
@@ -80,6 +98,13 @@ async function run() {
             const resut = await productCollection.insertOne(data);
             res.send(resut);
         })
+        // app.post('/bookadd', async (req, res) => {
+        //     const data = req.body;
+        //     data.date = new Date(Date.now()).toISOString();
+        //     const resut = await bookedCollection.insertOne(data);
+        //     res.send(resut);
+
+        // })
         app.put('/wishlist', async (req, res) => {
             // const data = req.body;
             // const resut = await wishListCollection.insertOne(data);
@@ -95,15 +120,24 @@ async function run() {
                     catagory: user.catagory,
                     img: user.img,
                     name: user.name,
-                    price: user.price
-
-
+                    price: user.price,
+                    issold: false
                 }
             };
             const result = await wishListCollection.updateOne(filter, updateDoc, options);
             console.log(result);
             res.send(result)
         })
+
+        app.get('/wishlist', async (req, res) => {
+            const email = req.query.email;
+            const query = {
+                email: email
+            }
+            const products = await wishListCollection.find(query).toArray();
+            res.send(products);
+        })
+
         app.get('/catagory/:id', async (req, res) => {
             const catagory = req.params.id;
             const query = { catagory: catagory };
