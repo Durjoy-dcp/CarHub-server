@@ -132,10 +132,7 @@ async function run() {
             res.send(result)
         })
         app.put('/payment', async (req, res) => {
-            // const data = req.body;
-            // const resut = await wishListCollection.insertOne(data);
-            // res.send(resut);
-            // , serial: user._id
+
             const user = req.body;
             console.log(user);
             const filter = { serial: user.bookingId };
@@ -151,10 +148,7 @@ async function run() {
             const result = await wishListCollection.updateOne(filter, updateDoc);
             const result2 = await bookedCollection.updateOne(filter, updateDoc);
             const result3 = await productCollection.updateOne(filter2, updateDoc);
-            console.log(result);
-            console.log(result2);
-            console.log(result3);
-            res.send(result)
+            res.send(result3)
         })
 
         app.get('/wishlist', async (req, res) => {
@@ -209,20 +203,18 @@ async function run() {
 
             })
         })
-        // app.post('/payment', async (req, res) => {
-        //     const payment = req.body;
-        //     const result = await paymentsCollection.insertOne(payment);
-        //     const id = payment.bookingId
-        //     const filter = { _id: ObjectId(id) }
-        //     const updatedDoc = {
-        //         $set: {
-        //             paid: true,
-        //             transactionId: payment.transactionId
-        //         }
-        //     }
-        //     const updatedResult = await bookingCollection.updateOne(filter, updatedDoc)
-        //     res.send(result)
-        // })
+        app.delete('/car/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id);
+            const filter = { serial: id };
+            const filter2 = { _id: ObjectId(id) }
+
+            const result = await bookedCollection.deleteOne(filter);
+            const result2 = await wishListCollection.deleteOne(filter);
+            const result3 = await productCollection.deleteOne(filter2);
+            res.send(result3);
+
+        })
         app.put('/user', async (req, res) => {
             const user = req.body;
             const filter = { email: user.email };
