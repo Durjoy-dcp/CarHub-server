@@ -150,6 +150,24 @@ async function run() {
             const result3 = await productCollection.updateOne(filter2, updateDoc);
             res.send(result3)
         })
+        app.put('/available', async (req, res) => {
+
+            const id = req.body;
+            console.log(id);
+            const filter = { serial: id._id };
+            const filter2 = { _id: ObjectId(id._id) }
+            const updateDoc = {
+                $set: {
+                    issold: false,
+                    newOwner: "",
+                    txnid: ""
+                }
+            };
+            const result = await wishListCollection.updateOne(filter, updateDoc);
+            const result2 = await bookedCollection.updateOne(filter, updateDoc);
+            const result3 = await productCollection.updateOne(filter2, updateDoc);
+            res.send(result3)
+        })
 
         app.get('/wishlist', async (req, res) => {
             const email = req.query.email;
