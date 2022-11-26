@@ -14,6 +14,7 @@ const password = process.env.DB_PASSWORD
 const uri = `mongodb+srv://${username}:${password}@cluster0.lgdlxzl.mongodb.net/?retryWrites=true&w=majority`;
 // console.log(uri)
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 
 async function run() {
@@ -35,7 +36,7 @@ async function run() {
             } else {
                 req.verified = false
                 req.role = 'Seller'
-                console.log(user.verifiedSeller)
+                // console.log(user.verifiedSeller)
                 if (user.verifiedSeller) {
                     req.verified = true
                 }
@@ -43,7 +44,7 @@ async function run() {
             next();
         }
         const verifyAdmin = async (req, res, next) => {
-            console.log(req.query.email)
+            // console.log(req.query.email)
             const email = req.query.email;
             const query = { email: email };
             const user = await userCollection.findOne(query);
@@ -57,7 +58,7 @@ async function run() {
         }
 
         app.get('/user/seller', verifySeller, async (req, res) => {
-            console.log(req?.role, req.verified)
+            // console.log(req?.role, req.verified)
             res.send({ isSeller: req?.role === 'Seller', verified: req.verified });
 
         })
@@ -84,11 +85,11 @@ async function run() {
             }
             const result = await bookedCollection.insertOne(bookedData);
             res.send(result);
-            console.log(result);
+            // console.log(result);
 
         })
         app.get('/user/admin', verifyAdmin, async (req, res) => {
-            console.log(req?.role)
+            // console.log(req?.role)
             res.send({ isAdmin: req?.role === 'admin' });
 
         })
@@ -121,11 +122,38 @@ async function run() {
                     img: user.img,
                     name: user.name,
                     price: user.price,
-                    issold: false
+                    issold: user.issold,
+                    newOwner: user.newOwner,
+                    txnid: user.txnid
                 }
             };
             const result = await wishListCollection.updateOne(filter, updateDoc, options);
+            // console.log(result);
+            res.send(result)
+        })
+        app.put('/payment', async (req, res) => {
+            // const data = req.body;
+            // const resut = await wishListCollection.insertOne(data);
+            // res.send(resut);
+            // , serial: user._id
+            const user = req.body;
+            console.log(user);
+            const filter = { serial: user.bookingId };
+            // const options = { upsert: true };
+            const filter2 = { _id: ObjectId(user.bookingId) }
+            const updateDoc = {
+                $set: {
+                    issold: true,
+                    newOwner: user.email,
+                    txnid: user.transactionID
+                }
+            };
+            const result = await wishListCollection.updateOne(filter, updateDoc);
+            const result2 = await bookedCollection.updateOne(filter, updateDoc);
+            const result3 = await productCollection.updateOne(filter2, updateDoc);
             console.log(result);
+            console.log(result2);
+            console.log(result3);
             res.send(result)
         })
 
@@ -150,17 +178,51 @@ async function run() {
             const catagory = req.params.id;
             const query = { catagory: catagory };
             const result = await productCollection.find(query).toArray();
-            console.log(result);
+            // console.log(result);
             res.send(result);
         })
         app.get('/bookings/:id', async (req, res) => {
             const id = req.params.id;
-            console.log(id);
+            // console.log(id);
             const query = { _id: ObjectId(id) };
             const booking = await productCollection.findOne(query);
             // console.log(booking, "df");
             res.send(booking);
         })
+        app.post("/create-payment-intent", async (req, res) => {
+            const booking = req.body;
+            const price = booking.price;
+            //Here multiplying by 1 instead of 100 because if the number is big ,it is a problem to handle for stripe 
+            const amount = price * 1;
+            console.log(amount)
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                "payment_method_types": [
+                    "card"
+                ],
+
+            });
+            // console.log(paymentIntent.client_secret)
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+
+            })
+        })
+        // app.post('/payment', async (req, res) => {
+        //     const payment = req.body;
+        //     const result = await paymentsCollection.insertOne(payment);
+        //     const id = payment.bookingId
+        //     const filter = { _id: ObjectId(id) }
+        //     const updatedDoc = {
+        //         $set: {
+        //             paid: true,
+        //             transactionId: payment.transactionId
+        //         }
+        //     }
+        //     const updatedResult = await bookingCollection.updateOne(filter, updatedDoc)
+        //     res.send(result)
+        // })
         app.put('/user', async (req, res) => {
             const user = req.body;
             const filter = { email: user.email };
@@ -175,7 +237,7 @@ async function run() {
                 },
             };
             const result = await userCollection.updateOne(filter, updateDoc, options);
-            console.log(result);
+            // console.log(result);
             res.send(result)
 
 
