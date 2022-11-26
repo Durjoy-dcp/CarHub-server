@@ -23,6 +23,7 @@ async function run() {
         const productCollection = client.db('carhub').collection('product');
         const wishListCollection = client.db('carhub').collection('wishlist');
         const bookedCollection = client.db('carhub').collection('booked');
+        const advertiseCollection = client.db('carhub').collection('advertise');
         const myorderCollection = client.db('carhub').collection('myorder');
         const verifySeller = async (req, res, next) => {
             // console.log(req.query.email)
@@ -88,6 +89,20 @@ async function run() {
             // console.log(result);
 
         })
+        app.post('/advertise', async (req, res) => {
+            const advertise = req.body;
+            const query = {
+                serial: advertise.id,
+            }
+            const alreadyadvertised = await advertiseCollection.find(query).toArray();
+            if (alreadyadvertised.length) {
+                return res.send({ acknowledged: false })
+            }
+            const result = await advertiseCollection.insertOne(advertise);
+            res.send(result);
+
+
+        })
         app.get('/user/admin', verifyAdmin, async (req, res) => {
             // console.log(req?.role)
             res.send({ isAdmin: req?.role === 'admin' });
@@ -147,6 +162,7 @@ async function run() {
             };
             const result = await wishListCollection.updateOne(filter, updateDoc);
             const result2 = await bookedCollection.updateOne(filter, updateDoc);
+            const result4 = await advertiseCollection.deleteOne(filter);
             const result3 = await productCollection.updateOne(filter2, updateDoc);
             res.send(result3)
         })
@@ -229,6 +245,7 @@ async function run() {
 
             const result = await bookedCollection.deleteOne(filter);
             const result2 = await wishListCollection.deleteOne(filter);
+            const result4 = await advertiseCollection.deleteOne(filter);
             const result3 = await productCollection.deleteOne(filter2);
             res.send(result3);
 
