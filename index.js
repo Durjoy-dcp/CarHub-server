@@ -146,6 +146,50 @@ async function run() {
             // console.log(result);
             res.send(result)
         })
+        app.put('/verify', verifyAdmin, async (req, res) => {
+            if (req.role === 'admin') {
+                console.log(req.body);
+                const filter = { email: req.body.email }
+                const updateDoc = {
+                    $set: {
+                        verifiedSeller: true
+                    }
+                }
+                const result = await userCollection.updateOne(filter, updateDoc);
+                const result2 = await productCollection.updateOne(filter, updateDoc);
+                console.log(result)
+                if (result.acknowledged && result2.acknowledged) {
+                    res.send({ msg: true })
+                }
+                else {
+                    res.send({ msg: false })
+                }
+
+            }
+            else {
+                console.log('this is not admin');
+                res.send({ msg: false })
+            }
+
+        })
+        app.delete('/userdelet', verifyAdmin, async (req, res) => {
+            if (req.role === 'admin') {
+                const selleremail = req.query.selleremail;
+                const query = { email: selleremail }
+                const result = await userCollection.deleteMany(query);
+                const result2 = await bookedCollection.deleteMany(query);
+                const result3 = await productCollection.deleteMany(query);
+                const result4 = await advertiseCollection.deleteMany(query);
+                if (result2.acknowledged && result3.acknowledged && result4.acknowledged && result.acknowledged) {
+                    res.send({ msg: true })
+                }
+            }
+
+            else {
+                console.log('this is not admin');
+                res.send({ msg: false })
+            }
+        })
         app.put('/payment', async (req, res) => {
 
             const user = req.body;
@@ -198,6 +242,7 @@ async function run() {
                 }
             };
             const result = await wishListCollection.updateOne(filter, updateDoc);
+            const result4 = await advertiseCollection.deleteOne(filter);
             const result2 = await bookedCollection.updateOne(filter, updateDoc);
             const result3 = await productCollection.updateOne(filter2, updateDoc);
             res.send(result3)
@@ -209,6 +254,14 @@ async function run() {
                 email: email
             }
             const products = await wishListCollection.find(query).toArray();
+            res.send(products);
+        })
+        app.get('/user', async (req, res) => {
+            const email = req.query.email;
+            const query = {
+                role: req.query.role
+            }
+            const products = await userCollection.find(query).toArray();
             res.send(products);
         })
         app.get('/bookinglist', async (req, res) => {
