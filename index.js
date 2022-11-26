@@ -184,6 +184,24 @@ async function run() {
             const result3 = await productCollection.updateOne(filter2, updateDoc);
             res.send(result3)
         })
+        app.put('/sold', async (req, res) => {
+
+            const id = req.body;
+            console.log(id);
+            const filter = { serial: id._id };
+            const filter2 = { _id: ObjectId(id._id) }
+            const updateDoc = {
+                $set: {
+                    issold: true,
+                    newOwner: "The Old owner",
+                    txnid: "No Payment"
+                }
+            };
+            const result = await wishListCollection.updateOne(filter, updateDoc);
+            const result2 = await bookedCollection.updateOne(filter, updateDoc);
+            const result3 = await productCollection.updateOne(filter2, updateDoc);
+            res.send(result3)
+        })
 
         app.get('/wishlist', async (req, res) => {
             const email = req.query.email;
@@ -201,10 +219,18 @@ async function run() {
             const products = await bookedCollection.find(query).toArray();
             res.send(products);
         })
+        app.get('/advertise', async (req, res) => {
+
+            const query = {
+
+            }
+            const products = await advertiseCollection.find(query).toArray();
+            res.send(products);
+        })
 
         app.get('/catagory/:id', async (req, res) => {
             const catagory = req.params.id;
-            const query = { catagory: catagory };
+            const query = { catagory: catagory, issold: false };
             const result = await productCollection.find(query).toArray();
             // console.log(result);
             res.send(result);
