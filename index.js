@@ -2,9 +2,9 @@ const express = require('express')
 const app = express()
 const port = process.env.PORT || 5000
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-
-const cors = require('cors')
 require('dotenv').config()
+const cors = require('cors')
+const jwt = require('jsonwebtoken');
 app.use(cors())
 app.use(express.json())
 
@@ -15,6 +15,24 @@ const uri = `mongodb+srv://${username}:${password}@cluster0.lgdlxzl.mongodb.net/
 // console.log(uri)
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
+
+// function verifyJWT(req, res, next) {
+//     // console.log(`token inside verifyjwt `, req.headers.authorization);    
+//     const authHeader = req.headers.authorization;
+//     if (!authHeader) {
+//         res.status(401).send('unauthorized access')
+//     }
+//     const token = authHeader.split(' ')[1];
+//     jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+//         if (err) {
+//             res.status(403).send({ message: 'forbidden access' })
+//         }
+//         req.decoded = decoded;
+//         next()
+//     });
+
+// }
 
 
 async function run() {
@@ -57,6 +75,19 @@ async function run() {
             }
             next();
         }
+        app.get('/jwt', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email }
+            const user = await userCollection.findOne(query)
+            // console.log(user)
+            if (user) {
+                const token = jwt.sign({ email }, process.env.ACCESS_TOKEN);
+                return res.send({ accessToken: token })
+            }
+
+            res.status(403).send({ accessToken: '' })
+        })
+
 
         app.get('/user/seller', verifySeller, async (req, res) => {
             // console.log(req?.role, req.verified)
@@ -65,6 +96,7 @@ async function run() {
         })
         app.get('/product', async (req, res) => {
             const email = req.query.email;
+
             const query = {
                 email: email
             }
@@ -146,9 +178,34 @@ async function run() {
             // console.log(result);
             res.send(result)
         })
+        app.put('/wishlistfromad', async (req, res) => {
+            // const data = req.body;
+            // const resut = await wishListCollection.insertOne(data);
+            // res.send(resut);
+            // , serial: user._id
+            const user = req.body;
+            const filter = { email: user.email, serial: user._id };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    serial: user.serial,
+                    email: user.email,
+                    catagory: user.catagory,
+                    img: user.img,
+                    name: user.name,
+                    price: user.price,
+                    issold: user.issold,
+                    newOwner: user.newOwner,
+                    txnid: user.txnid
+                }
+            };
+            const result = await wishListCollection.updateOne(filter, updateDoc, options);
+            // console.log(result);
+            res.send(result)
+        })
         app.put('/verify', verifyAdmin, async (req, res) => {
             if (req.role === 'admin') {
-                console.log(req.body);
+                // console.log(req.body);
                 const filter = { email: req.body.email }
                 const updateDoc = {
                     $set: {
@@ -157,7 +214,7 @@ async function run() {
                 }
                 const result = await userCollection.updateOne(filter, updateDoc);
                 const result2 = await productCollection.updateOne(filter, updateDoc);
-                console.log(result)
+                // console.log(result)
                 if (result.acknowledged && result2.acknowledged) {
                     res.send({ msg: true })
                 }
@@ -167,7 +224,7 @@ async function run() {
 
             }
             else {
-                console.log('this is not admin');
+                // console.log('this is not admin');
                 res.send({ msg: false })
             }
 
@@ -186,14 +243,14 @@ async function run() {
             }
 
             else {
-                console.log('this is not admin');
+                // console.log('this is not admin');
                 res.send({ msg: false })
             }
         })
         app.put('/payment', async (req, res) => {
 
             const user = req.body;
-            console.log(user);
+            // console.log(user);
             const filter = { serial: user.bookingId };
             // const options = { upsert: true };
             const filter2 = { _id: ObjectId(user.bookingId) }
@@ -213,7 +270,7 @@ async function run() {
         app.put('/available', async (req, res) => {
 
             const id = req.body;
-            console.log(id);
+            // console.log(id);
             const filter = { serial: id._id };
             const filter2 = { _id: ObjectId(id._id) }
             const updateDoc = {
@@ -231,7 +288,7 @@ async function run() {
         app.put('/sold', async (req, res) => {
 
             const id = req.body;
-            console.log(id);
+            // console.log(id);
             const filter = { serial: id._id };
             const filter2 = { _id: ObjectId(id._id) }
             const updateDoc = {
@@ -301,6 +358,7 @@ async function run() {
             const price = booking.price;
             //Here multiplying by 1 instead of 100 because if the number is big ,it is a problem to handle for stripe 
             const amount = price * 1;
+            console.log(price)
             console.log(amount)
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: amount,
@@ -318,7 +376,7 @@ async function run() {
         })
         app.delete('/car/:id', async (req, res) => {
             const id = req.params.id;
-            console.log(id);
+            // console.log(id);
             const filter = { serial: id };
             const filter2 = { _id: ObjectId(id) }
 
@@ -363,5 +421,5 @@ app.get('/', (req, res) => {
 })
 
 app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
+    // console.log(`Example app listening on port ${port}`)
 })
