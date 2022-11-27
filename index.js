@@ -17,22 +17,30 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 
-// function verifyJWT(req, res, next) {
-//     // console.log(`token inside verifyjwt `, req.headers.authorization);    
-//     const authHeader = req.headers.authorization;
-//     if (!authHeader) {
-//         res.status(401).send('unauthorized access')
-//     }
-//     const token = authHeader.split(' ')[1];
-//     jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
-//         if (err) {
-//             res.status(403).send({ message: 'forbidden access' })
-//         }
-//         req.decoded = decoded;
-//         next()
-//     });
+function verifyJWT(req, res, next) {
+    // console.log(`token inside verifyjwt `, req.headers.authorization);    
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        res.status(401).send('unauthorized access')
+    }
+    console.log(authHeader)
+    const token = authHeader.split(' ')[1];
+    if (token === null) {
+        console.log('in token')
+        res.status(401).send('unauthorized access')
 
-// }
+    }
+    console.log(token)
+    jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({ message: 'forbidden access' })
+        }
+        req.decoded = decoded;
+        console.log(decoded)
+        next()
+    });
+
+}
 
 
 async function run() {
@@ -94,9 +102,12 @@ async function run() {
             res.send({ isSeller: req?.role === 'Seller', verified: req.verified });
 
         })
-        app.get('/product', async (req, res) => {
+        app.get('/product', verifyJWT, async (req, res) => {
             const email = req.query.email;
 
+            if (email !== req.decoded.email) {
+                res.status(403).send({ message: 'forbidden access' })
+            }
             const query = {
                 email: email
             }
