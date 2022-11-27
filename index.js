@@ -316,8 +316,11 @@ async function run() {
             res.send(result3)
         })
 
-        app.get('/wishlist', async (req, res) => {
+        app.get('/wishlist', verifyJWT, async (req, res) => {
             const email = req.query.email;
+            if (email !== req.decoded.email) {
+                res.status(403).send({ message: 'forbidden access' })
+            }
             const query = {
                 email: email
             }
@@ -332,8 +335,11 @@ async function run() {
             const products = await userCollection.find(query).toArray();
             res.send(products);
         })
-        app.get('/bookinglist', async (req, res) => {
+        app.get('/bookinglist', verifyJWT, async (req, res) => {
             const email = req.query.email;
+            if (email !== req.decoded.email) {
+                res.status(403).send({ message: 'forbidden access' })
+            }
             const query = {
                 email: email
             }
