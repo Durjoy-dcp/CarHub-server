@@ -5,6 +5,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const cors = require('cors')
 const jwt = require('jsonwebtoken');
+const { query } = require('express');
 app.use(cors())
 app.use(express.json())
 
@@ -223,8 +224,8 @@ async function run() {
                         verifiedSeller: true
                     }
                 }
-                const result = await userCollection.updateOne(filter, updateDoc);
-                const result2 = await productCollection.updateOne(filter, updateDoc);
+                const result = await userCollection.updateMany(filter, updateDoc);
+                const result2 = await productCollection.updateMany(filter, updateDoc);
                 // console.log(result)
                 if (result.acknowledged && result2.acknowledged) {
                     res.send({ msg: true })
@@ -357,8 +358,10 @@ async function run() {
 
         app.get('/catagory/:id', async (req, res) => {
             const catagory = req.params.id;
+            // console.log("it is here")
             const query = { catagory: catagory, issold: false };
             const result = await productCollection.find(query).toArray();
+            // console.log(result)
             // console.log(result);
             res.send(result);
         })
@@ -422,6 +425,12 @@ async function run() {
             res.send(result)
 
 
+        })
+        app.get('/all', async (req, res) => {
+            const filter = {};
+            const result = await productCollection.find(filter).toArray();
+            console.log(result);
+            res.send(result)
         })
 
     }
